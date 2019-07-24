@@ -2,6 +2,7 @@
 #include <Vuforia/Driver/Driver.h>
 #include "MediaCaptureCamera.h"
 
+
 class MediaCaptureDriver : public Vuforia::Driver::VuforiaDriver
 {
 public:
@@ -13,7 +14,6 @@ public:
 	void VUFORIA_DRIVER_CALLING_CONVENTION destroyExternalCamera(Vuforia::Driver::ExternalCamera* instance) override;
 
 private:
-	Vuforia::Driver::PlatformData* mPlatformData{ nullptr };
-	MediaCaptureCamera* mExternalCamera{ nullptr };
+	Vuforia::Driver::PlatformData* m_PlatformData{ nullptr };
+	MediaCaptureCamera* m_ExternalCamera{ nullptr };
 };
-

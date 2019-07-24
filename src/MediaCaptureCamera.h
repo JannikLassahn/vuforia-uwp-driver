@@ -1,7 +1,8 @@
 #pragma once
 #include <Vuforia/Driver/Driver.h>
 
-class MediaCaptureCamera final : public Vuforia::Driver::ExternalCamera
+
+class  MediaCaptureCamera : public Vuforia::Driver::ExternalCamera
 {
 public:
 	MediaCaptureCamera(Vuforia::Driver::PlatformData* platformData);
@@ -34,5 +35,25 @@ public:
 	float VUFORIA_DRIVER_CALLING_CONVENTION getFocusValueMax() override;
 	float VUFORIA_DRIVER_CALLING_CONVENTION getFocusValue() override;
 	bool VUFORIA_DRIVER_CALLING_CONVENTION setFocusValue(float value) override;
-};
 
+	void FrameReader_FrameArrived(
+		Windows::Media::Capture::Frames::MediaFrameReader^ sender,
+		Windows::Media::Capture::Frames::MediaFrameArrivedEventArgs^ args);
+
+
+private:
+	Windows::Media::Capture::Frames::MediaFrameSource^ GetGroupForCameraMode(Vuforia::Driver::CameraMode mode);
+
+	concurrency::task<bool> CleanupResources();
+	concurrency::task<bool> TryInitializeMediaCaptureAsync(
+		Windows::Media::Capture::Frames::MediaFrameSourceGroup^ group);
+
+	Vuforia::Driver::CameraCallback* m_callback{ nullptr };
+	std::vector<Vuforia::Driver::CameraMode> m_supportedCameraModes;
+
+	Windows::Foundation::EventRegistrationToken m_token;
+	Windows::Media::Capture::Frames::MediaFrameReader^ m_reader;
+	Windows::Media::Capture::Frames::MediaFrameSourceGroup^ m_sourceGroup;
+
+	Platform::Agile<Windows::Media::Capture::MediaCapture> m_mediaCapture;
+};

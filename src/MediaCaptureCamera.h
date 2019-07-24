@@ -1,6 +1,7 @@
 #pragma once
 #include <Vuforia/Driver/Driver.h>
 
+ref class Wrapper;
 
 class  MediaCaptureCamera : public Vuforia::Driver::ExternalCamera
 {
@@ -43,6 +44,7 @@ public:
 
 private:
 	Windows::Media::Capture::Frames::MediaFrameSource^ GetGroupForCameraMode(Vuforia::Driver::CameraMode mode);
+	bool GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap, unsigned char** pPixelData, unsigned int* capacity);
 
 	concurrency::task<bool> CleanupResources();
 	concurrency::task<bool> TryInitializeMediaCaptureAsync(
@@ -53,7 +55,31 @@ private:
 
 	Windows::Foundation::EventRegistrationToken m_token;
 	Windows::Media::Capture::Frames::MediaFrameReader^ m_reader;
-	Windows::Media::Capture::Frames::MediaFrameSourceGroup^ m_sourceGroup;
+	Windows::Media::Capture::Frames::MediaFrameSourceGroup^ m_selectedSourceGroup;
 
 	Platform::Agile<Windows::Media::Capture::MediaCapture> m_mediaCapture;
+	Wrapper^ m_wrapper;
 };
+
+#pragma region Workaround for WinRT callback
+
+//TODO: remove this wrapper and use smart pointers if possible
+
+ref class Wrapper sealed
+{
+internal:
+	Wrapper(MediaCaptureCamera* mediaCaptureCamera)
+		: m_mediaCaptureCamera(mediaCaptureCamera)
+	{}
+
+	void FrameReader_FrameArrived(
+		Windows::Media::Capture::Frames::MediaFrameReader^ sender,
+		Windows::Media::Capture::Frames::MediaFrameArrivedEventArgs^ args) {
+		m_mediaCaptureCamera->FrameReader_FrameArrived(sender, args);
+	}
+private:
+	MediaCaptureCamera* m_mediaCaptureCamera;
+
+};
+
+#pragma endregion

@@ -2,6 +2,8 @@
 #include "MediaCaptureCamera.h"
 #include <wrl\wrappers\corewrappers.h>
 #include <wrl\client.h>
+#include <Helper.cpp>
+using namespace Microsoft::WRL;
 
 using namespace concurrency;
 
@@ -11,10 +13,11 @@ using namespace Platform::Collections;
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
 
+using namespace Windows::Graphics::Imaging;
+using namespace Windows::Storage::Streams;
+
 using namespace Windows::Media::Capture;
 using namespace Windows::Media::Capture::Frames;
-
-#define LOG(s) OutputDebugString(s)
 
 #pragma region Buffer Wrangling
 
@@ -25,29 +28,6 @@ IMemoryBufferByteAccess : IUnknown
 		BYTE * *value,
 		UINT32 * capacity
 		);
-};
-
-#pragma endregion
-
-#pragma region Workaround for WinRT callback
-
-//TODO: remove this wrapper and use smart pointers if possible
-
-ref class Wrapper sealed
-{
-internal:
-	Wrapper(MediaCaptureCamera* mediaCaptureCamera)
-		: m_mediaCaptureCamera(mediaCaptureCamera)
-	{}
-
-	void FrameReader_FrameArrived(
-		Windows::Media::Capture::Frames::MediaFrameReader^ sender,
-		Windows::Media::Capture::Frames::MediaFrameArrivedEventArgs^ args) {
-		m_mediaCaptureCamera->FrameReader_FrameArrived(sender, args);
-	}
-private:
-	MediaCaptureCamera* m_mediaCaptureCamera;
-
 };
 
 #pragma endregion
@@ -65,35 +45,39 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 {
 
 	//TODO: let user choose index either directly or with some ID
-	int index = 0;
+	int index = 1;
 
-	auto task = create_task(MediaFrameSourceGroup::FindAllAsync())
-		.then([this, index](IVectorView<MediaFrameSourceGroup^>^ allGroups)
+	auto findAllGroupsTask = create_task(MediaFrameSourceGroup::FindAllAsync());
+	auto initCaptureTask = findAllGroupsTask.then([this, index](IVectorView<MediaFrameSourceGroup^>^ allGroups)
+		{
+			if (allGroups->Size == 0)
 			{
-				if (allGroups->Size == 0)
-				{
-					LOG(L"No source groups found");
-					return task_from_result(false);
-				}
+				Log("DRIVER", "No source groups found");
+				return task_from_result(false);
+			}
 
-				m_sourceGroup = allGroups->GetAt(index);
+			m_selectedSourceGroup = allGroups->GetAt(index);
 
-				// Initialize MediaCapture with selected group
-				return TryInitializeMediaCaptureAsync(m_sourceGroup)
-					.then([this](bool initialized)
-						{
-							if (!initialized)
-							{
-								return CleanupResources();
-							}
+			Log("DRIVER", "Trying source group '" + m_selectedSourceGroup->DisplayName + "'");
 
-							return task_from_result(true);
+			// Initialize MediaCapture with selected group
+			return TryInitializeMediaCaptureAsync(m_selectedSourceGroup);
+		}, task_continuation_context::get_current_winrt_context());
+	auto initCleanupTask = initCaptureTask.then([this](bool initialized)
+		{
+			if (!initialized)
+			{
+				return CleanupResources();
+			}
 
-						}, task_continuation_context::get_current_winrt_context());
-			}, task_continuation_context::get_current_winrt_context());
+			Log("DRIVER", "Successfully initialized camera");
 
+			return task_from_result(true);
 
-	return task.get();
+		}, task_continuation_context::get_current_winrt_context());
+
+	initCleanupTask.wait();
+	return initCleanupTask.get();
 }
 
 bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::close()
@@ -111,39 +95,50 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::start(Vuforia::Driver
 	m_callback = cb;
 
 	auto source = GetGroupForCameraMode(cameraMode);
-	auto task = create_task(m_mediaCapture->CreateFrameReaderAsync(source))
-		.then([this](MediaFrameReader^ frameReader)
+
+	if (source == nullptr)
+	{
+		return false;
+	}
+
+	auto task = create_task(m_mediaCapture->CreateFrameReaderAsync(source));
+	auto task2 = task.then([this](MediaFrameReader^ frameReader)
+		{
+			m_reader = frameReader;
+
+			//TODO: remove use of wrapper class
+			m_wrapper = ref new Wrapper(this);
+
+			m_token = frameReader->FrameArrived +=
+				ref new TypedEventHandler<MediaFrameReader^, MediaFrameArrivedEventArgs^>(m_wrapper, &Wrapper::FrameReader_FrameArrived);
+
+			return create_task(m_reader->StartAsync());
+		}, task_continuation_context::get_current_winrt_context());
+	auto task3 = task2.then([](MediaFrameReaderStartStatus status)
+		{
+			if (status == MediaFrameReaderStartStatus::Success)
 			{
-				m_reader = frameReader;
+				return task_from_result(true);
+			}
 
-				//TODO: remove use of wrapper class
-				auto wrapper = ref new Wrapper(this);
+			//TODO: do some logging
 
-				m_token = frameReader->FrameArrived +=
-					ref new TypedEventHandler<MediaFrameReader^, MediaFrameArrivedEventArgs^>(wrapper, &Wrapper::FrameReader_FrameArrived);
+			return task_from_result(false);
+		}, task_continuation_context::get_current_winrt_context());
 
-				return create_task(m_reader->StartAsync());
-			}, task_continuation_context::get_current_winrt_context())
-		.then([](MediaFrameReaderStartStatus status)
-			{
-				if (status == MediaFrameReaderStartStatus::Success)
-				{
-					return task_from_result(true);
-				}
-
-				//TODO: do some loggin
-
-				return task_from_result(false);
-			}, task_continuation_context::get_current_winrt_context());
-	
-			
-	task.wait();
-	return task.get();
+	task3.wait();
+	return task3.get();
 }
 
 bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::stop()
 {
-	return false;
+	if (m_reader == nullptr)
+	{
+		return false;
+	}
+
+	m_reader->StopAsync();
+	return true;
 }
 
 uint32_t VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getNumSupportedCameraModes()
@@ -168,9 +163,24 @@ uint32_t VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getNumSupportedCa
 
 		for (auto format : source->SupportedFormats)
 		{
-			//TODO: figure out pixel format
+			auto pixelFormat = Vuforia::Driver::PixelFormat::UNKNOWN;
+			auto subtype = format->Subtype;
+
+			if (subtype == "YUYV")
+			{
+				pixelFormat = Vuforia::Driver::PixelFormat::YUYV;
+			}
+			else if (subtype == "NV12")
+			{
+				pixelFormat = Vuforia::Driver::PixelFormat::NV12;
+			}
+			else if (subtype == "NV21")
+			{
+				pixelFormat = Vuforia::Driver::PixelFormat::NV21;
+			}
 
 			Vuforia::Driver::CameraMode cameraMode;
+			cameraMode.format = pixelFormat;
 			cameraMode.width = format->VideoFormat->Width;
 			cameraMode.height = format->VideoFormat->Height;
 			cameraMode.fps = uint32_t(format->FrameRate->Numerator / format->FrameRate->Denominator);
@@ -280,23 +290,88 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::setFocusValue(float v
 
 MediaFrameSource^ MediaCaptureCamera::GetGroupForCameraMode(Vuforia::Driver::CameraMode mode)
 {
+	auto isFormatSet = mode.format != Vuforia::Driver::PixelFormat::UNKNOWN;
+	String^ subtype;
+
+	if (isFormatSet)
+	{
+		if (mode.format == Vuforia::Driver::PixelFormat::NV12)
+			subtype = "NV12";
+		else if (mode.format == Vuforia::Driver::PixelFormat::NV21)
+			subtype = "NV21";
+		else if (mode.format == Vuforia::Driver::PixelFormat::YUYV)
+			subtype = "YUYV";
+	}
+
+	for (auto kvp : m_mediaCapture->FrameSources)
+	{
+		MediaFrameSource^ source = kvp->Value;
+		MediaFrameSourceKind kind = source->Info->SourceKind;
+
+		// only use color frames
+		if (kind != MediaFrameSourceKind::Color)
+		{
+			continue;
+		}
+
+		for (auto format : source->SupportedFormats)
+		{
+			if (format->VideoFormat->Width == mode.width &&
+				format->VideoFormat->Height == mode.height)
+			{
+				if (isFormatSet && subtype != format->Subtype)
+					continue;
+
+				auto task = create_task(source->SetFormatAsync(format));
+
+				try
+				{
+					task.wait();
+					return source;
+				}
+				catch (Exception^ ex)
+				{
+					return nullptr;
+				}
+			}
+		}
+	}
+
 	return nullptr;
+}
+
+bool MediaCaptureCamera::GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap, unsigned char** pPixelData, unsigned int* capacity)
+{
+	BitmapBuffer^ bmpBuffer = bitmap->LockBuffer(BitmapBufferAccessMode::ReadWrite);
+	IMemoryBufferReference^ reference = bmpBuffer->CreateReference();
+
+	ComPtr<IMemoryBufferByteAccess> pBufferByteAccess;
+	if ((reinterpret_cast<IInspectable*>(reference)->QueryInterface(IID_PPV_ARGS(&pBufferByteAccess))) != S_OK)
+	{
+		return false;
+	}
+
+	if (pBufferByteAccess->GetBuffer(pPixelData, capacity) != S_OK)
+	{
+		return false;
+	}
+	return true;
 }
 
 task<bool> MediaCaptureCamera::CleanupResources()
 {
-	//if (m_mediaCapture == nullptr)
-	//{
-	//	return task_from_result(false);
-	//}
+	if (m_mediaCapture == nullptr)
+	{
+		return task_from_result(false);
+	}
 
-	//m_reader->FrameArrived -= m_token;
-	//return create_task(m_reader->StopAsync())
-	//	.then([this]()
-	//		{
-	//			m_mediaCapture = nullptr;
-	//			return task_from_result(true);
-	//		});
+	m_reader->FrameArrived -= m_token;
+	return create_task(m_reader->StopAsync())
+		.then([this]()
+			{
+				m_mediaCapture = nullptr;
+				return task_from_result(true);
+			});
 
 	return task_from_result(true);
 }
@@ -335,7 +410,7 @@ task<bool> MediaCaptureCamera::TryInitializeMediaCaptureAsync(MediaFrameSourceGr
 				}
 				catch (Exception^ exception)
 				{
-					//LOG(L"Failed to initialize media capture: " + exception->Message);
+					Log("DRIVER", "Failed to initialize media capture: " + exception->Message->ToString());
 					return false;
 				}
 			});
@@ -349,38 +424,29 @@ void MediaCaptureCamera::FrameReader_FrameArrived(MediaFrameReader^ sender, Medi
 		return;
 	}
 
-	auto frameBuffer = frameReference->VideoMediaFrame->SoftwareBitmap->LockBuffer(Windows::Graphics::Imaging::BitmapBufferAccessMode::ReadWrite);
-	auto reference = frameBuffer->CreateReference();
+	unsigned char* pixelData = nullptr;
+	unsigned int capacity = 0;
 
-	Microsoft::WRL::ComPtr<IMemoryBufferByteAccess> bufferByteAccess;
-	HRESULT result = reinterpret_cast<IInspectable*>(reference)->QueryInterface(IID_PPV_ARGS(&bufferByteAccess));
-
-	if (result == S_OK)
+	if (!GetPointerToPixelData(frameReference->VideoMediaFrame->SoftwareBitmap, &pixelData, &capacity))
 	{
-		BYTE* data = nullptr;
-		UINT32 capacity = 0;
+		Log("DRIVER", "Could not get pixel data from current frame");
+		return;
+	}
 
-		result = bufferByteAccess->GetBuffer(&data, &capacity);
+	Vuforia::Driver::CameraFrame frame;
+	frame.buffer = pixelData;
+	frame.bufferSize = capacity;
+	frame.width = frameReference->VideoMediaFrame->VideoFormat->Width;
+	frame.height = frameReference->VideoMediaFrame->VideoFormat->Height;
 
-		if (result == S_OK)
-		{
-			Vuforia::Driver::CameraFrame frame;
-			frame.buffer = data;
-			frame.bufferSize = capacity;
-			frame.width = frameReference->VideoMediaFrame->VideoFormat->Width;
-			frame.height = frameReference->VideoMediaFrame->VideoFormat->Height;
+	//TODO: set other fields, e.g. format, stride, ...
 
-			//TODO: set other fields, e.g. format, stride, ...
-
-			if (m_callback)
-			{
-				m_callback->onNewCameraFrame(&frame);
-			}
-			else
-			{
-				LOG(L"Camera frame callback to Vuforia is not found");
-			}
-		}
-
+	if (m_callback)
+	{
+		m_callback->onNewCameraFrame(&frame);
+	}
+	else
+	{
+		Log("DRIVER", "Camera frame callback to Vuforia is not found");
 	}
 }

@@ -10,6 +10,7 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="MediaCaptureCamera.cpp" />
     <ClCompile Include="MediaCaptureDriver.cpp" />
+    <ClCompile Include="Helper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

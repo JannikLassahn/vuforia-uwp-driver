@@ -1,8 +1,12 @@
 #include "pch.h"
 #include "MediaCaptureCamera.h"
+#include <Helper.cpp>
+
+#include "MemoryBuffer.h"
+
 #include <wrl\wrappers\corewrappers.h>
 #include <wrl\client.h>
-#include <Helper.cpp>
+
 using namespace Microsoft::WRL;
 
 using namespace concurrency;
@@ -19,19 +23,6 @@ using namespace Windows::Storage::Streams;
 using namespace Windows::Media::Capture;
 using namespace Windows::Media::Capture::Frames;
 
-#pragma region Buffer Wrangling
-
-MIDL_INTERFACE("5b0d3235-4dba-4d44-865e-8f1d0e4fd04d")
-IMemoryBufferByteAccess : IUnknown
-{
-	virtual HRESULT STDMETHODCALLTYPE GetBuffer(
-		BYTE * *value,
-		UINT32 * capacity
-		);
-};
-
-#pragma endregion
-
 
 MediaCaptureCamera::MediaCaptureCamera(Vuforia::Driver::PlatformData* platformData)
 {
@@ -45,7 +36,7 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 {
 
 	//TODO: let user choose index either directly or with some ID
-	int index = 1;
+	int index = 0;
 
 	auto findAllGroupsTask = create_task(MediaFrameSourceGroup::FindAllAsync());
 	auto initCaptureTask = findAllGroupsTask.then([this, index](IVectorView<MediaFrameSourceGroup^>^ allGroups)
@@ -116,14 +107,29 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::start(Vuforia::Driver
 		}, task_continuation_context::get_current_winrt_context());
 	auto task3 = task2.then([](MediaFrameReaderStartStatus status)
 		{
-			if (status == MediaFrameReaderStartStatus::Success)
+			bool result = false;
+
+			switch (status)
 			{
-				return task_from_result(true);
+			case MediaFrameReaderStartStatus::Success:
+				result = true;
+				Log("DRIVER", "Successfully initialized frame reader");
+				break;
+			case MediaFrameReaderStartStatus::UnknownFailure:
+				Log("DRIVER", "Unknown failure");
+				break;
+			case MediaFrameReaderStartStatus::DeviceNotAvailable:
+				Log("DRIVER", "The camera device is not available");
+				break;
+			case MediaFrameReaderStartStatus::OutputFormatNotSupported:
+				Log("DRIVER", "The ouput format is not supported");
+				break;
+			case MediaFrameReaderStartStatus::ExclusiveControlNotAvailable:
+				Log("DRIVER", "Exclusive control is not available");
+				break;
 			}
 
-			//TODO: do some logging
-
-			return task_from_result(false);
+			return task_from_result(result);
 		}, task_continuation_context::get_current_winrt_context());
 
 	task3.wait();
@@ -137,7 +143,8 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::stop()
 		return false;
 	}
 
-	m_reader->StopAsync();
+	auto task = create_task(m_reader->StopAsync());
+	task.wait();
 	return true;
 }
 
@@ -340,10 +347,13 @@ MediaFrameSource^ MediaCaptureCamera::GetGroupForCameraMode(Vuforia::Driver::Cam
 	return nullptr;
 }
 
-bool MediaCaptureCamera::GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap, unsigned char** pPixelData, unsigned int* capacity)
+bool MediaCaptureCamera::GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap, unsigned char** pPixelData, unsigned int* capacity, int *stride)
 {
 	BitmapBuffer^ bmpBuffer = bitmap->LockBuffer(BitmapBufferAccessMode::ReadWrite);
 	IMemoryBufferReference^ reference = bmpBuffer->CreateReference();
+
+	auto descr = bmpBuffer->GetPlaneDescription(0);
+	*stride = descr.Stride;
 
 	ComPtr<IMemoryBufferByteAccess> pBufferByteAccess;
 	if ((reinterpret_cast<IInspectable*>(reference)->QueryInterface(IID_PPV_ARGS(&pBufferByteAccess))) != S_OK)
@@ -388,7 +398,7 @@ task<bool> MediaCaptureCamera::TryInitializeMediaCaptureAsync(MediaFrameSourceGr
 
 	auto settings = ref new MediaCaptureInitializationSettings();
 	settings->SourceGroup = group;
-	settings->SharingMode = MediaCaptureSharingMode::SharedReadOnly;
+	settings->SharingMode = MediaCaptureSharingMode::ExclusiveControl;
 	settings->StreamingCaptureMode = StreamingCaptureMode::Video;
 	settings->MemoryPreference = MediaCaptureMemoryPreference::Cpu;
 	settings->StreamingCaptureMode = StreamingCaptureMode::Video;
@@ -426,18 +436,24 @@ void MediaCaptureCamera::FrameReader_FrameArrived(MediaFrameReader^ sender, Medi
 
 	unsigned char* pixelData = nullptr;
 	unsigned int capacity = 0;
+	int stride = 0;
 
-	if (!GetPointerToPixelData(frameReference->VideoMediaFrame->SoftwareBitmap, &pixelData, &capacity))
+	if (!GetPointerToPixelData(frameReference->VideoMediaFrame->SoftwareBitmap, &pixelData, &capacity, &stride))
 	{
 		Log("DRIVER", "Could not get pixel data from current frame");
 		return;
 	}
 
+	auto exposureTimeEnd = std::chrono::system_clock::now();
+
 	Vuforia::Driver::CameraFrame frame;
+	frame.stride = stride;
 	frame.buffer = pixelData;
 	frame.bufferSize = capacity;
 	frame.width = frameReference->VideoMediaFrame->VideoFormat->Width;
 	frame.height = frameReference->VideoMediaFrame->VideoFormat->Height;
+	frame.timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(exposureTimeEnd.time_since_epoch()).count();
+
 
 	//TODO: set other fields, e.g. format, stride, ...
 

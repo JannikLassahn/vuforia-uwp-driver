@@ -44,7 +44,7 @@ public:
 
 private:
 	Windows::Media::Capture::Frames::MediaFrameSource^ GetGroupForCameraMode(Vuforia::Driver::CameraMode mode);
-	bool GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap, unsigned char** pPixelData, unsigned int* capacity);
+	bool GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap, unsigned char** pPixelData, unsigned int* capacity, int* stride);
 
 	concurrency::task<bool> CleanupResources();
 	concurrency::task<bool> TryInitializeMediaCaptureAsync(

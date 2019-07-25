@@ -65,5 +65,7 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Certificates
+*.pfx.meta
 
 # End of https://www.gitignore.io/api/unity

@@ -5,8 +5,23 @@ This is made possible by the [External Camera](https://library.vuforia.com/conte
 
 The code is based on Vuforia SDK 8.3.8.
 
+## Requirements
+* at least Vuforia SDK 8.3.8
+* at least Windows 10 SDK 14393
+* Visual Studio 2019 with workload for UWP development with C++
+
 ## Build
 
 1. Download the Vuforia SDK for UWP [here](https://developer.vuforia.com/downloads/sdk)
-2. Add an environment variable *VUFORIA_SDK* that points to the *\build\include* directoy inside the extracted SDK files, e.g. *C:\SDK\vuforia-sdk-uwp-8-3-8\build\include*
-3. Open *VuforiaUwpDriver.sln* in Visual Studio and start building
+2. Add an environment variable *VUFORIA_SDK* that points to the *\build\\* directoy inside the extracted SDK files, e.g. *C:\SDK\vuforia-sdk-uwp-8-3-8\build\\*
+3. Open *VuforiaUwpDriver.sln* in Visual Studio, make sure to select *Release* and the correct platform (x86, x64 or ARM64) then start building (CTRL+SHIFT+B).
+
+## Sample
+
+The sample folder contains a project for Unity 2018.4 that shows how to setup the driver library. 
+
+Steps to run this sample:
+1. Make sure you have the correct version of the Vuforia SDK for Unity installed. You can check the version by selecting the VuforiaConfiguration.asset in the project explorer. One of the first things you will see in the inspector is the version and a link to the newest SDK if you have an older one installed.
+2. Copy the DLLs you built to the respective plugin folders, e.g. the VuforiaUwpDriver.dll for x86 has to be copied to *Plugins/WSA/x86*.
+3. Build the project (CTRL+B)  
+4. Build the generated solution using Visual Studio. You might have to manually retarget the solution to successfully build all projects.

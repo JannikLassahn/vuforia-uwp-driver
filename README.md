@@ -14,7 +14,24 @@ The code is based on Vuforia SDK 8.3.8.
 
 1. Download the Vuforia SDK for UWP [here](https://developer.vuforia.com/downloads/sdk)
 2. Add an environment variable *VUFORIA_SDK* that points to the *\build\\* directoy inside the extracted SDK files, e.g. *C:\SDK\vuforia-sdk-uwp-8-3-8\build\\*
-3. Open *VuforiaUwpDriver.sln* in Visual Studio, make sure to select *Release* and the correct platform (x86, x64 or ARM64) then start building (CTRL+SHIFT+B).
+3. Open *VuforiaUwpDriver.sln* in Visual Studio, make sure to select *Release* and the correct platform (x86, x64 or ARM64) then start building (CTRL+SHIFT+B) or run *build.cmd* in the Developer Command Prompt for VS2019.
+
+## Usage
+
+You can configure the library through the [DriverUserData](./src/DriverUserData.h) struct.
+The only thing you can do for now is choosing a specific camera. 
+
+In C++
+```cpp
+// declare it
+DriverUserData userData;
+
+// and use it like this to set your camera
+userData.cameraName = "Microsoft LifeCam Rear";
+Vuforia::setDriverLibrary("VuforiaUwpDriver.dll", &userData);
+```
+
+Take a look at the [VuforiaSetup.cs](./sample/UnityExternalCamera/Assets/Scripts/VuforiaSetup.cs) script for usage with Unity and C#. 
 
 ## Sample
 

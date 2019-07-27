@@ -16,7 +16,8 @@ extern "C"
 	{
 		if (g_MediaCaptureDriverInstance == nullptr)
 		{
-			g_MediaCaptureDriverInstance = new MediaCaptureDriver(platformData);
+			auto driverUserData = static_cast<DriverUserData*>(userdata);
+			g_MediaCaptureDriverInstance = new MediaCaptureDriver(platformData, driverUserData);
 			return g_MediaCaptureDriverInstance;
 		}
 
@@ -52,8 +53,9 @@ extern "C"
 // PUBLIC INTERFACE IMPLEMENTATION
 //=============================================================================
 
-MediaCaptureDriver::MediaCaptureDriver(Vuforia::Driver::PlatformData* platformData)
-	: m_PlatformData(platformData)
+MediaCaptureDriver::MediaCaptureDriver(Vuforia::Driver::PlatformData* platformData, DriverUserData* userData)
+	: m_PlatformData(platformData),
+	m_UserData(userData)
 {
 }
 
@@ -65,7 +67,7 @@ Vuforia::Driver::ExternalCamera* VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureD
 {
 	if (m_ExternalCamera == nullptr)
 	{
-		m_ExternalCamera = new MediaCaptureCamera(m_PlatformData);
+		m_ExternalCamera = new MediaCaptureCamera(m_PlatformData, m_UserData);
 		return m_ExternalCamera;
 	}
 

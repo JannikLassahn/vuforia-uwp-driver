@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MediaCaptureCamera.h"
 #include <Helper.cpp>
+#include <string>
 
 #include "MemoryBuffer.h"
 
@@ -24,7 +25,18 @@ using namespace Windows::Media::Capture;
 using namespace Windows::Media::Capture::Frames;
 
 
-MediaCaptureCamera::MediaCaptureCamera(Vuforia::Driver::PlatformData* platformData)
+static String^ getHString(const std::string& str)
+{
+	wchar_t* wstr = new wchar_t[str.length()];
+	int hStrCount = ::MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, str.c_str(), static_cast<int>(str.length()), wstr, static_cast<int>(str.length()));
+	String^ hStr = ref new String(wstr, hStrCount);
+	delete wstr;
+
+	return hStr;
+}
+
+MediaCaptureCamera::MediaCaptureCamera(Vuforia::Driver::PlatformData* platformData, DriverUserData* userData)
+	: m_userData(userData)
 {
 }
 
@@ -34,27 +46,67 @@ MediaCaptureCamera::~MediaCaptureCamera()
 
 bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 {
-
-	//TODO: let user choose index either directly or with some ID
-	int index = 0;
+	// find all cameras
 
 	auto findAllGroupsTask = create_task(MediaFrameSourceGroup::FindAllAsync());
-	auto initCaptureTask = findAllGroupsTask.then([this, index](IVectorView<MediaFrameSourceGroup^>^ allGroups)
+	auto initCaptureTask = findAllGroupsTask.then([this](IVectorView<MediaFrameSourceGroup^>^ allGroups)
 		{
 			if (allGroups->Size == 0)
 			{
-				Log("DRIVER", "No source groups found");
+				Log("DRIVER", "No cameras found");
 				return task_from_result(false);
 			}
+			
+			// no user data provided, take first available camera
 
-			m_selectedSourceGroup = allGroups->GetAt(index);
+			if (m_userData == nullptr)
+			{
+				m_selectedSourceGroup = allGroups->GetAt(0);
+			}
+			else
+			{
+				// convert from std::string to Plattform::String
 
-			Log("DRIVER", "Trying source group '" + m_selectedSourceGroup->DisplayName + "'");
+				std::string cameraName_std;
+				String^ cameraName_p;
 
-			// Initialize MediaCapture with selected group
-			return TryInitializeMediaCaptureAsync(m_selectedSourceGroup);
+				cameraName_std = m_userData->cameraName;
+				cameraName_p = getHString(cameraName_std);
+
+				if (cameraName_std.empty())
+				{
+					// camera name turned out empty, take first available camera
+					m_selectedSourceGroup = allGroups->GetAt(0);
+				}
+				else
+				{						
+					// search the requested camera
+
+					for (auto sourceGroup : allGroups)
+					{
+						if (sourceGroup->DisplayName == cameraName_p)
+						{
+							m_selectedSourceGroup = sourceGroup;
+							break;
+						}
+					}
+				}
+			}
+
+			Log("DRIVER", "Trying camera named'" + m_selectedSourceGroup->DisplayName + "'");
+			return task_from_result(true);
+
 		}, task_continuation_context::get_current_winrt_context());
-	auto initCleanupTask = initCaptureTask.then([this](bool initialized)
+
+	initCaptureTask.wait();
+	if (!initCaptureTask.get())
+	{
+		return false;
+	}
+
+	// Initialize MediaCapture with selected group
+	auto initTask = TryInitializeMediaCaptureAsync(m_selectedSourceGroup);
+	auto initCleanupTask = initTask.then([this](bool initialized)
 		{
 			if (!initialized)
 			{
@@ -62,7 +114,6 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 			}
 
 			Log("DRIVER", "Successfully initialized camera");
-
 			return task_from_result(true);
 
 		}, task_continuation_context::get_current_winrt_context());
@@ -73,7 +124,9 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 
 bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::close()
 {
-	return false;
+	auto cleanupTask = CleanupResources();
+	cleanupTask.wait();
+	return cleanupTask.get();
 }
 
 bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::start(Vuforia::Driver::CameraMode cameraMode, Vuforia::Driver::CameraCallback* cb)
@@ -347,7 +400,7 @@ MediaFrameSource^ MediaCaptureCamera::GetGroupForCameraMode(Vuforia::Driver::Cam
 	return nullptr;
 }
 
-bool MediaCaptureCamera::GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap, unsigned char** pPixelData, unsigned int* capacity, int *stride)
+bool MediaCaptureCamera::GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap, unsigned char** pPixelData, unsigned int* capacity, int* stride)
 {
 	BitmapBuffer^ bmpBuffer = bitmap->LockBuffer(BitmapBufferAccessMode::ReadWrite);
 	IMemoryBufferReference^ reference = bmpBuffer->CreateReference();
@@ -372,16 +425,19 @@ task<bool> MediaCaptureCamera::CleanupResources()
 {
 	if (m_mediaCapture == nullptr)
 	{
-		return task_from_result(false);
+		return task_from_result(true);
 	}
 
-	m_reader->FrameArrived -= m_token;
-	return create_task(m_reader->StopAsync())
-		.then([this]()
-			{
-				m_mediaCapture = nullptr;
-				return task_from_result(true);
-			});
+	if (m_reader != nullptr)
+	{
+		m_reader->FrameArrived -= m_token;
+		return create_task(m_reader->StopAsync())
+			.then([this]()
+				{
+					m_mediaCapture = nullptr;
+					return task_from_result(true);
+				});
+	}
 
 	return task_from_result(true);
 }

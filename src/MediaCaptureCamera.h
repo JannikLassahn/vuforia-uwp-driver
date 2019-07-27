@@ -1,12 +1,13 @@
 #pragma once
 #include <Vuforia/Driver/Driver.h>
+#include "DriverUserData.h"
 
 ref class Wrapper;
 
 class  MediaCaptureCamera : public Vuforia::Driver::ExternalCamera
 {
 public:
-	MediaCaptureCamera(Vuforia::Driver::PlatformData* platformData);
+	MediaCaptureCamera(Vuforia::Driver::PlatformData* platformData, DriverUserData* userData);
 	~MediaCaptureCamera();
 
 	bool VUFORIA_DRIVER_CALLING_CONVENTION open() override;
@@ -51,6 +52,9 @@ private:
 		Windows::Media::Capture::Frames::MediaFrameSourceGroup^ group);
 
 	Vuforia::Driver::CameraCallback* m_callback{ nullptr };
+	
+	DriverUserData* m_userData{ nullptr };
+
 	std::vector<Vuforia::Driver::CameraMode> m_supportedCameraModes;
 
 	Windows::Foundation::EventRegistrationToken m_token;

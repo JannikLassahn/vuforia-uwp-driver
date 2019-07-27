@@ -11,10 +11,12 @@
     <ClCompile Include="MediaCaptureCamera.cpp" />
     <ClCompile Include="MediaCaptureDriver.cpp" />
     <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="DriverUserData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="MediaCaptureCamera.h" />
     <ClInclude Include="MediaCaptureDriver.h" />
+    <ClInclude Include="DriverUserData.h" />
   </ItemGroup>
 </Project>

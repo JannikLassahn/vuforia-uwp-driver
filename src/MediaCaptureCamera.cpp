@@ -35,7 +35,7 @@ static String^ getHString(const std::string& str)
 	return hStr;
 }
 
-MediaCaptureCamera::MediaCaptureCamera(Vuforia::Driver::PlatformData* platformData, DriverUserData* userData)
+MediaCaptureCamera::MediaCaptureCamera(VuforiaDriver::PlatformData* platformData, DriverUserData* userData)
 	: m_userData(userData)
 {
 }
@@ -53,10 +53,10 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 		{
 			if (allGroups->Size == 0)
 			{
-				Log("DRIVER", "No cameras found");
+				Log("No cameras found");
 				return task_from_result(false);
 			}
-			
+
 			// no user data provided, take first available camera
 
 			if (m_userData == nullptr)
@@ -79,7 +79,7 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 					m_selectedSourceGroup = allGroups->GetAt(0);
 				}
 				else
-				{						
+				{
 					// search the requested camera
 
 					for (auto sourceGroup : allGroups)
@@ -93,7 +93,7 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 				}
 			}
 
-			Log("DRIVER", "Trying camera named'" + m_selectedSourceGroup->DisplayName + "'");
+			Log("Trying camera named '" + m_selectedSourceGroup->DisplayName + "'");
 			return task_from_result(true);
 
 		}, task_continuation_context::get_current_winrt_context());
@@ -113,7 +113,7 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::open()
 				return CleanupResources();
 			}
 
-			Log("DRIVER", "Successfully initialized camera");
+			Log("Successfully initialized camera");
 			return task_from_result(true);
 
 		}, task_continuation_context::get_current_winrt_context());
@@ -129,7 +129,7 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::close()
 	return cleanupTask.get();
 }
 
-bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::start(Vuforia::Driver::CameraMode cameraMode, Vuforia::Driver::CameraCallback* cb)
+bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::start(VuforiaDriver::CameraMode cameraMode, VuforiaDriver::CameraCallback* cb)
 {
 	if (m_mediaCapture == nullptr)
 	{
@@ -166,19 +166,19 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::start(Vuforia::Driver
 			{
 			case MediaFrameReaderStartStatus::Success:
 				result = true;
-				Log("DRIVER", "Successfully initialized frame reader");
+				Log("Successfully initialized frame reader");
 				break;
 			case MediaFrameReaderStartStatus::UnknownFailure:
-				Log("DRIVER", "Unknown failure");
+				Log("Unknown failure");
 				break;
 			case MediaFrameReaderStartStatus::DeviceNotAvailable:
-				Log("DRIVER", "The camera device is not available");
+				Log("The camera device is not available");
 				break;
 			case MediaFrameReaderStartStatus::OutputFormatNotSupported:
-				Log("DRIVER", "The ouput format is not supported");
+				Log("The ouput format is not supported");
 				break;
 			case MediaFrameReaderStartStatus::ExclusiveControlNotAvailable:
-				Log("DRIVER", "Exclusive control is not available");
+				Log("Exclusive control is not available");
 				break;
 			}
 
@@ -223,23 +223,23 @@ uint32_t VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getNumSupportedCa
 
 		for (auto format : source->SupportedFormats)
 		{
-			auto pixelFormat = Vuforia::Driver::PixelFormat::UNKNOWN;
+			auto pixelFormat = VuforiaDriver::PixelFormat::UNKNOWN;
 			auto subtype = format->Subtype;
 
-			if (subtype == "YUYV")
+			if (subtype == "YUYV" || subtype == "YUY2")
 			{
-				pixelFormat = Vuforia::Driver::PixelFormat::YUYV;
+				pixelFormat = VuforiaDriver::PixelFormat::YUYV;
 			}
 			else if (subtype == "NV12")
 			{
-				pixelFormat = Vuforia::Driver::PixelFormat::NV12;
+				pixelFormat = VuforiaDriver::PixelFormat::NV12;
 			}
 			else if (subtype == "NV21")
 			{
-				pixelFormat = Vuforia::Driver::PixelFormat::NV21;
+				pixelFormat = VuforiaDriver::PixelFormat::NV21;
 			}
 
-			Vuforia::Driver::CameraMode cameraMode;
+			VuforiaDriver::CameraMode cameraMode;
 			cameraMode.format = pixelFormat;
 			cameraMode.width = format->VideoFormat->Width;
 			cameraMode.height = format->VideoFormat->Height;
@@ -252,7 +252,7 @@ uint32_t VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getNumSupportedCa
 	return m_supportedCameraModes.size();
 }
 
-bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getSupportedCameraMode(uint32_t index, Vuforia::Driver::CameraMode* out)
+bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getSupportedCameraMode(uint32_t index, VuforiaDriver::CameraMode* out)
 {
 	if (index < 0 || index >= m_supportedCameraModes.size())
 	{
@@ -263,19 +263,19 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getSupportedCameraMod
 	return true;
 }
 
-bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::supportsExposureMode(Vuforia::Driver::ExposureMode parameter)
+bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::supportsExposureMode(VuforiaDriver::ExposureMode parameter)
 {
 	return false;
 }
 
 #pragma region EXPOSURE AND FOCUS
 
-Vuforia::Driver::ExposureMode VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getExposureMode()
+VuforiaDriver::ExposureMode VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getExposureMode()
 {
-	return Vuforia::Driver::ExposureMode::UNKNOWN;
+	return VuforiaDriver::ExposureMode::UNKNOWN;
 }
 
-bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::setExposureMode(Vuforia::Driver::ExposureMode mode)
+bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::setExposureMode(VuforiaDriver::ExposureMode mode)
 {
 	return false;
 }
@@ -305,17 +305,17 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::setExposureValue(uint
 	return false;
 }
 
-bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::supportsFocusMode(Vuforia::Driver::FocusMode parameter)
+bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::supportsFocusMode(VuforiaDriver::FocusMode parameter)
 {
 	return false;
 }
 
-Vuforia::Driver::FocusMode VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getFocusMode()
+VuforiaDriver::FocusMode VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::getFocusMode()
 {
-	return Vuforia::Driver::FocusMode::UNKNOWN;
+	return VuforiaDriver::FocusMode::UNKNOWN;
 }
 
-bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::setFocusMode(Vuforia::Driver::FocusMode mode)
+bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::setFocusMode(VuforiaDriver::FocusMode mode)
 {
 	return false;
 }
@@ -348,20 +348,16 @@ bool VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureCamera::setFocusValue(float v
 #pragma endregion
 
 
-MediaFrameSource^ MediaCaptureCamera::GetGroupForCameraMode(Vuforia::Driver::CameraMode mode)
+MediaFrameSource^ MediaCaptureCamera::GetGroupForCameraMode(VuforiaDriver::CameraMode mode)
 {
-	auto isFormatSet = mode.format != Vuforia::Driver::PixelFormat::UNKNOWN;
 	String^ subtype;
 
-	if (isFormatSet)
-	{
-		if (mode.format == Vuforia::Driver::PixelFormat::NV12)
-			subtype = "NV12";
-		else if (mode.format == Vuforia::Driver::PixelFormat::NV21)
-			subtype = "NV21";
-		else if (mode.format == Vuforia::Driver::PixelFormat::YUYV)
-			subtype = "YUYV";
-	}
+	if (mode.format == VuforiaDriver::PixelFormat::NV12)
+		subtype = "NV12";
+	else if (mode.format == VuforiaDriver::PixelFormat::NV21)
+		subtype = "NV21";
+	else if (mode.format == VuforiaDriver::PixelFormat::YUYV)
+		subtype = "YUYV";
 
 	for (auto kvp : m_mediaCapture->FrameSources)
 	{
@@ -376,23 +372,34 @@ MediaFrameSource^ MediaCaptureCamera::GetGroupForCameraMode(Vuforia::Driver::Cam
 
 		for (auto format : source->SupportedFormats)
 		{
-			if (format->VideoFormat->Width == mode.width &&
-				format->VideoFormat->Height == mode.height)
+			if (format->VideoFormat->Width != mode.width ||
+				format->VideoFormat->Height != mode.height) 
 			{
-				if (isFormatSet && subtype != format->Subtype)
-					continue;
+				continue;
+			}
 
+			auto fps = uint32_t(format->FrameRate->Numerator / format->FrameRate->Denominator);
+			if (fps != mode.fps) 
+			{
+				continue;
+			}
+
+			auto type = format->Subtype;
+			auto substituteFormat = type == "YUY2" && subtype == "YUYV";
+			if (!substituteFormat && subtype != type)
+			{
+				continue;
+			}
+
+			try
+			{
 				auto task = create_task(source->SetFormatAsync(format));
-
-				try
-				{
-					task.wait();
-					return source;
-				}
-				catch (Exception^ ex)
-				{
-					return nullptr;
-				}
+				task.wait();
+				return source;
+			}
+			catch (Exception^ ex)
+			{
+				return nullptr;
 			}
 		}
 	}
@@ -476,7 +483,7 @@ task<bool> MediaCaptureCamera::TryInitializeMediaCaptureAsync(MediaFrameSourceGr
 				}
 				catch (Exception^ exception)
 				{
-					Log("DRIVER", "Failed to initialize media capture: " + exception->Message->ToString());
+					Log("Failed to initialize media capture: " + exception->Message->ToString());
 					return false;
 				}
 			});
@@ -496,13 +503,13 @@ void MediaCaptureCamera::FrameReader_FrameArrived(MediaFrameReader^ sender, Medi
 
 	if (!GetPointerToPixelData(frameReference->VideoMediaFrame->SoftwareBitmap, &pixelData, &capacity, &stride))
 	{
-		Log("DRIVER", "Could not get pixel data from current frame");
+		Log("Could not get pixel data from current frame");
 		return;
 	}
 
 	auto exposureTimeEnd = std::chrono::system_clock::now();
 
-	Vuforia::Driver::CameraFrame frame;
+	VuforiaDriver::CameraFrame frame;
 	frame.stride = stride;
 	frame.buffer = pixelData;
 	frame.bufferSize = capacity;
@@ -519,6 +526,6 @@ void MediaCaptureCamera::FrameReader_FrameArrived(MediaFrameReader^ sender, Medi
 	}
 	else
 	{
-		Log("DRIVER", "Camera frame callback to Vuforia is not found");
+		Log("Camera frame callback to Vuforia is not found");
 	}
 }

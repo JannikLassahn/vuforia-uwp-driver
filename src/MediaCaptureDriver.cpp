@@ -12,7 +12,7 @@ namespace
 //=============================================================================
 extern "C"
 {
-	Vuforia::Driver::VuforiaDriver* vuforiaDriver_init(Vuforia::Driver::PlatformData* platformData, void* userdata)
+	VuforiaDriver::Driver* vuforiaDriver_init(VuforiaDriver::PlatformData* platformData, void* userdata)
 	{
 		if (g_MediaCaptureDriverInstance == nullptr)
 		{
@@ -25,7 +25,7 @@ extern "C"
 		return nullptr;
 	}
 
-	void vuforiaDriver_deinit(Vuforia::Driver::VuforiaDriver* instance)
+	void vuforiaDriver_deinit(VuforiaDriver::Driver* instance)
 	{
 		if (instance == g_MediaCaptureDriverInstance)
 		{
@@ -36,7 +36,7 @@ extern "C"
 
 	uint32_t vuforiaDriver_getAPIVersion()
 	{
-		return Vuforia::Driver::VUFORIA_DRIVER_API_VERSION;
+		return VuforiaDriver::VUFORIA_DRIVER_API_VERSION;
 	}
 
 	uint32_t vuforiaDriver_getLibraryVersion(char* outString, const uint32_t maxLength)
@@ -53,7 +53,7 @@ extern "C"
 // PUBLIC INTERFACE IMPLEMENTATION
 //=============================================================================
 
-MediaCaptureDriver::MediaCaptureDriver(Vuforia::Driver::PlatformData* platformData, DriverUserData* userData)
+MediaCaptureDriver::MediaCaptureDriver(VuforiaDriver::PlatformData* platformData, DriverUserData* userData)
 	: m_PlatformData(platformData),
 	m_UserData(userData)
 {
@@ -63,7 +63,7 @@ MediaCaptureDriver::~MediaCaptureDriver()
 {
 }
 
-Vuforia::Driver::ExternalCamera* VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureDriver::createExternalCamera()
+VuforiaDriver::ExternalCamera* VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureDriver::createExternalCamera()
 {
 	if (m_ExternalCamera == nullptr)
 	{
@@ -75,11 +75,16 @@ Vuforia::Driver::ExternalCamera* VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureD
 	return nullptr;
 }
 
-void VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureDriver::destroyExternalCamera(Vuforia::Driver::ExternalCamera* instance)
+void VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureDriver::destroyExternalCamera(VuforiaDriver::ExternalCamera* instance)
 {
 	if (instance == m_ExternalCamera)
 	{
 		delete static_cast<MediaCaptureCamera*>(instance);
 		m_ExternalCamera = nullptr;
 	}
+}
+
+uint32_t VUFORIA_DRIVER_CALLING_CONVENTION MediaCaptureDriver::getCapabilities()
+{
+	return (uint32_t)(VuforiaDriver::Capability::CAMERA_IMAGE);
 }

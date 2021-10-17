@@ -3,17 +3,17 @@
 This project demonstrates a way to use cameras that are not recognized or supported by Vuforia (UWP only). 
 This is made possible by the [External Camera](https://library.vuforia.com/content/vuforia-library/en/articles/Solution/external-camera.html) feature from Vuforia and the lower-level [MediaCapture APIs](https://docs.microsoft.com/en-us/uwp/api/windows.media.capture.mediacapture).
 
-The code is based on Vuforia SDK 8.3.8.
+The code is based on Vuforia SDK 10.2.5.
 
 ## Requirements
-* at least Vuforia SDK 8.3.8
+* at least Vuforia SDK 10.2.5
 * at least Windows 10 SDK 14393
 * Visual Studio 2019 with workload for UWP development with C++
 
 ## Build
 
 1. Download the Vuforia SDK for UWP [here](https://developer.vuforia.com/downloads/sdk)
-2. Add an environment variable *VUFORIA_SDK* that points to the *\build\\* directoy inside the extracted SDK files, e.g. *C:\SDK\vuforia-sdk-uwp-8-3-8\build\\*
+2. Add an environment variable *VUFORIA_SDK* that points to the *\build\\* directoy inside the extracted SDK files, e.g. *C:\SDK\vuforia-sdk-uwp-10-2-5\build\\*
 3. Open *VuforiaUwpDriver.sln* in Visual Studio, make sure to select *Release* and the correct platform (x86, x64 or ARM64) then start building (CTRL+SHIFT+B) or run *build.cmd* in the Developer Command Prompt for VS2019.
 
 ## Usage

@@ -2,8 +2,8 @@
 
 using namespace	Platform;
 
-static void Log(String^ tag, String^ msg) 
+static void Log(String^ msg) 
 {
-	auto s = tag + " : " + msg + "\n";
+	auto s = "[UWP-DRIVER]: " + msg + "\n";
 	OutputDebugString(s->Data());
 }

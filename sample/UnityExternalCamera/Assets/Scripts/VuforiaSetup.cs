@@ -20,9 +20,8 @@ public class VuforiaSetup : MonoBehaviour
 
     private void Awake()
     {
-        if(ConfigureDriver)
+        if (ConfigureDriver)
         {
-
             _userData = new DriverUserData
             {
                 cameraName = CameraName 
@@ -30,18 +29,8 @@ public class VuforiaSetup : MonoBehaviour
 
             _userDataPointer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(DriverUserData)));
             Marshal.StructureToPtr(_userData, _userDataPointer, false);
-        }
-        else
-        {
-            _userDataPointer = IntPtr.Zero;
-        }
+        }         
 
-        var isDriverLibrarySet = VuforiaUnity.SetDriverLibrary(LibraryName, _userDataPointer);
-        if (!isDriverLibrarySet)
-        {
-            Debug.LogError("Failed to set driver library");
-        }
-
-        VuforiaRuntime.Instance.InitVuforia();
+        VuforiaApplication.Instance.Initialize(LibraryName, _userDataPointer);        
     }
 }

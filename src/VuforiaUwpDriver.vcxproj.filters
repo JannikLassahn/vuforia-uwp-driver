@@ -2,21 +2,34 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Resources">
-      <UniqueIdentifier>b6d24ee9-d997-4a3a-9f58-7092c4380214</UniqueIdentifier>
+      <UniqueIdentifier>accd3aa8-1ba0-4223-9bbe-0c431709210b</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{926ab91d-31b4-48c3-b9a4-e681349f27f0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="MediaCaptureCamera.cpp" />
-    <ClCompile Include="MediaCaptureDriver.cpp" />
-    <ClCompile Include="Helper.cpp" />
-    <ClCompile Include="DriverUserData.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Driver.cpp" />
+    <ClCompile Include="MediaCaptureAdapter.cpp" />
+    <ClCompile Include="module.g.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="MediaCaptureCamera.h" />
-    <ClInclude Include="MediaCaptureDriver.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="Driver.h" />
     <ClInclude Include="DriverUserData.h" />
+    <ClInclude Include="MediaCaptureAdapter.h" />
+    <ClInclude Include="Helper.h" />
+    <ClInclude Include="FormatConverter.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="VuforiaUwpDriver.def" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PropertySheet.props" />
   </ItemGroup>
 </Project>

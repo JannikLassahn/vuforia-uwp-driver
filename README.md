@@ -1,13 +1,11 @@
 # Vuforia Driver for UWP
 
 This project demonstrates a way to use cameras that are not recognized or supported by Vuforia (UWP only). 
-This is made possible by the [External Camera](https://library.vuforia.com/content/vuforia-library/en/articles/Solution/external-camera.html) feature from Vuforia and the lower-level [MediaCapture APIs](https://docs.microsoft.com/en-us/uwp/api/windows.media.capture.mediacapture).
-
-The code is based on Vuforia SDK 10.2.5.
+This is made possible by the [External Camera](https://library.vuforia.com/content/vuforia-library/en/articles/Solution/external-camera.html) feature from Vuforia and the lower-level [MediaCapture APIs](https://docs.microsoft.com/en-us/uwp/api/windows.media.capture.mediacapture). The driver is written in standard C++ thanks to [C++/WinRT](https://docs.microsoft.com/en-us/windows/uwp/cpp-and-winrt-apis/).
 
 ## Requirements
 * at least Vuforia SDK 10.2.5
-* at least Windows 10 SDK 14393
+* at least Windows 10 SDK 17134
 * Visual Studio 2019 with workload for UWP development with C++
 
 ## Build
@@ -19,15 +17,16 @@ The code is based on Vuforia SDK 10.2.5.
 ## Usage
 
 You can configure the library through the [DriverUserData](./src/DriverUserData.h) struct.
-The only thing you can do for now is choosing a specific camera. 
-
-In C++
+Use it to chose a specific camera or camera kind, e.g. color or depth.
+Per default the driver will choose the first color camera it can find.
+In C++:
 ```cpp
 // declare it
 DriverUserData userData;
 
 // and use it like this to set your camera
 userData.cameraName = "Microsoft LifeCam Rear";
+userData.cameraKind = Kind::Color;
 Vuforia::setDriverLibrary("VuforiaUwpDriver.dll", &userData);
 ```
 
@@ -35,10 +34,10 @@ Take a look at the [VuforiaSetup.cs](./sample/UnityExternalCamera/Assets/Scripts
 
 ## Sample
 
-The sample folder contains a project for Unity 2018.4 that shows how to setup the driver library. 
+The sample folder contains a project for Unity 2020.3 that shows how to setup the driver library. 
 
 Steps to run this sample:
-1. Make sure you have the correct version of the Vuforia SDK for Unity installed. You can check the version by selecting the VuforiaConfiguration.asset in the project explorer. One of the first things you will see in the inspector is the version and a link to the newest SDK if you have an older one installed.
-2. Copy the DLLs you built to the respective plugin folders, e.g. the VuforiaUwpDriver.dll for x86 has to be copied to *Plugins/WSA/x86*.
-3. Build the project (CTRL+B)  
-4. Build the generated solution using Visual Studio. You might have to manually retarget the solution to successfully build all projects.
+1. Make sure you have the correct version of the Vuforia SDK for Unity installed. You can check the version by selecting the VuforiaConfiguration.asset in the project explorer.
+2. Enter a valid license key for Vuforia to enable the custom driver feature
+3. Copy the DLLs you built to the respective plugin folders, e.g. the VuforiaUwpDriver.dll for x86 has to be copied to *Plugins/WSA/x86*
+4. Build the project (CTRL+B)

@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
-VisualStudioVersion = 16.0.29102.190
+VisualStudioVersion = 16.0.31729.503
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VuforiaUwpDriver", "VuforiaUwpDriver.vcxproj", "{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VuforiaUwpDriver", "VuforiaUwpDriver.vcxproj", "{EDD74404-7306-4E32-9BD3-264500E8D261}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,27 +17,27 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Debug|ARM.ActiveCfg = Debug|ARM
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Debug|ARM.Build.0 = Debug|ARM
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Debug|ARM64.Build.0 = Debug|ARM64
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Debug|x64.ActiveCfg = Debug|x64
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Debug|x64.Build.0 = Debug|x64
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Debug|x86.ActiveCfg = Debug|Win32
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Debug|x86.Build.0 = Debug|Win32
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Release|ARM.ActiveCfg = Release|ARM
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Release|ARM.Build.0 = Release|ARM
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Release|ARM64.ActiveCfg = Release|ARM64
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Release|ARM64.Build.0 = Release|ARM64
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Release|x64.ActiveCfg = Release|x64
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Release|x64.Build.0 = Release|x64
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Release|x86.ActiveCfg = Release|Win32
-		{8A4E7590-7636-41C8-B1D0-0C244D3D19E9}.Release|x86.Build.0 = Release|Win32
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Debug|ARM.ActiveCfg = Debug|ARM
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Debug|ARM.Build.0 = Debug|ARM
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Debug|ARM64.Build.0 = Debug|ARM64
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Debug|x64.ActiveCfg = Debug|x64
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Debug|x64.Build.0 = Debug|x64
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Debug|x86.ActiveCfg = Debug|Win32
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Debug|x86.Build.0 = Debug|Win32
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Release|ARM.ActiveCfg = Release|ARM
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Release|ARM.Build.0 = Release|ARM
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Release|ARM64.ActiveCfg = Release|ARM64
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Release|ARM64.Build.0 = Release|ARM64
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Release|x64.ActiveCfg = Release|x64
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Release|x64.Build.0 = Release|x64
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Release|x86.ActiveCfg = Release|Win32
+		{EDD74404-7306-4E32-9BD3-264500E8D261}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {556245C2-5EB0-443B-90FF-1B962042AF11}
+		SolutionGuid = {83833D35-5F85-46FF-A5FC-24D1588E1735}
 	EndGlobalSection
 EndGlobal

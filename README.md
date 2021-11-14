@@ -41,3 +41,11 @@ Steps to run this sample:
 2. Enter a valid license key for Vuforia to enable the custom driver feature
 3. Copy the DLLs you built to the respective plugin folders, e.g. the VuforiaUwpDriver.dll for x86 has to be copied to *Plugins/WSA/x86*
 4. Build the project (CTRL+B)
+
+## Troubleshooting
+
+#### Vuforia can't load the driver
+Make sure the driver DLL for the current platform is copied to the output directory. If you're not using Unity there are multiple ways to do so, the simplest being: add the DLL to the project (*Project > Add existing item > choose DLL*) and make sure to set *Content* to *true* in the properties panel of the file.
+
+#### The driver can't seem to find my camera
+If the camera isn't supported by the MediaCapture API you'll have to [get creative](https://janniklassahn.com/posts/vuforia-uwp-external-camera/).

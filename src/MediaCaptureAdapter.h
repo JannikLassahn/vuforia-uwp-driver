@@ -12,7 +12,8 @@ using namespace Windows::Media::Capture;
 using namespace Windows::Media::Capture::Frames;
 
 struct Model {
-	Model(MediaFrameFormat format):
+	Model(MediaFrameSource source, MediaFrameFormat format):
+		source(source),
 		format(format),
 		conversionRequired(false)
 	{
@@ -22,6 +23,7 @@ struct Model {
 	}
 
 	VuforiaDriver::CameraMode mode;
+	MediaFrameSource source;
 	MediaFrameFormat format;
 
 	bool conversionRequired; 
@@ -35,7 +37,7 @@ public:
 	MediaCaptureAdapter(Camera* camera);
 	~MediaCaptureAdapter();
 
-	IAsyncOperation<int> OpenMediaCapture(std::string name);
+	IAsyncOperation<bool> OpenMediaCapture(std::string name);
 	IAsyncAction StopMediaCapture();
 
 	void CollectCameraModes(Kind kind);
@@ -55,7 +57,6 @@ private:
 	MediaCapture m_mediaCapture;
 	MediaFrameReader m_reader;
 	MediaFrameSourceGroup m_selectedGroup;
-	MediaFrameSource m_source;
 	event_token m_frameArrivedToken;
 
 	Camera* m_camera;

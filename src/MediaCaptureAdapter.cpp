@@ -28,8 +28,8 @@ MediaCaptureAdapter::MediaCaptureAdapter(Camera* camera) :
 	m_reader(nullptr),
 	m_mediaCapture(nullptr),
 	m_selectedGroup(nullptr),
-	m_source(nullptr),
-	m_selectedModel(nullptr)
+	m_selectedModel(nullptr),
+	m_converter(nullptr)
 {
 }
 
@@ -38,39 +38,49 @@ MediaCaptureAdapter::~MediaCaptureAdapter()
 	delete m_converter;
 }
 
-IAsyncOperation<int> MediaCaptureAdapter::OpenMediaCapture(std::string name)
+IAsyncOperation<bool> MediaCaptureAdapter::OpenMediaCapture(std::string name)
 {
 	auto groups = co_await MediaFrameSourceGroup::FindAllAsync();
 	if (groups.Size() == 0)
 	{
-		co_return 0;
+		DebugLog("No cameras found");
+		co_return false;
 	}
 
 	if (name.empty())
 	{
 		m_selectedGroup = groups.GetAt(0);
 	}
-
-	auto h_name = winrt::to_hstring(name);
-	for (auto const& group : groups)
+	else 
 	{
-		if (group.DisplayName() == h_name)
+		auto h_name = winrt::to_hstring(name);
+		for (auto const& group : groups)
 		{
-			m_selectedGroup = group;
-			break;
+			if (group.DisplayName() == h_name)
+			{
+				m_selectedGroup = group;
+				break;
+			}
 		}
+	}
+
+	if (m_selectedGroup == nullptr)
+	{
+		DebugLog("Could not find applicable camera");
+		co_return false;
 	}
 
 	try
 	{
 		co_await InitializeMediaCapture();
-		co_return 0;
+		co_return true;
 	}
-	catch (const std::exception&)
+	catch (const std::exception& ex)
 	{
-		co_return 1;
+		auto message = std::string(ex.what());
+		DebugLog("Error initializing media capture. Message: " + message);
+		co_return false;
 	}
-
 }
 
 IAsyncAction MediaCaptureAdapter::StopMediaCapture()
@@ -90,14 +100,18 @@ IAsyncOperation<bool> MediaCaptureAdapter::StartFrameReaderWithMode(VuforiaDrive
 		co_return false;
 	}
 
-	MediaFrameFormat format{ nullptr };
-
-	for (auto const& e : std::as_const(m_supportedCameraModes)) {
-		if (IsEqualCameraMode(e.mode, mode)) {
+	for (auto const& e : std::as_const(m_supportedCameraModes)) 
+	{
+		if (IsEqualCameraMode(e.mode, mode)) 
+		{
 			m_selectedModel = &e;
-			format = e.format;
 			break;
 		}
+	}
+	
+	if (m_selectedModel == nullptr) 
+	{
+		co_return false;
 	}
 
 	if (m_selectedModel->conversionRequired) 
@@ -105,8 +119,21 @@ IAsyncOperation<bool> MediaCaptureAdapter::StartFrameReaderWithMode(VuforiaDrive
 		m_converter = new FormatConverter(m_selectedModel->format);
 	}
 
-	co_await m_source.SetFormatAsync(format);
-	m_reader = co_await m_mediaCapture.CreateFrameReaderAsync(m_source);
+	try
+	{
+		auto source = m_selectedModel->source;
+		auto format = m_selectedModel->format;
+
+		co_await source.SetFormatAsync(format);
+		m_reader = co_await m_mediaCapture.CreateFrameReaderAsync(source);
+	}
+	catch (const std::exception& ex)
+	{
+		auto message = std::string(ex.what());
+		DebugLog("Error creating frame reader. Message: " + message);
+		co_return false;
+	}
+
 	m_frameArrivedToken = m_reader.FrameArrived({ this, &MediaCaptureAdapter::OnFrameArrived });
 	auto status = co_await m_reader.StartAsync();
 
@@ -183,6 +210,10 @@ void MediaCaptureAdapter::CollectCameraModes(Kind kind)
 {
 	m_supportedCameraModes.clear();
 
+	if (m_mediaCapture == nullptr) {
+		return;
+	}
+
 	for (auto kvp : m_mediaCapture.FrameSources())
 	{
 		MediaFrameSource source = kvp.Value();
@@ -214,7 +245,7 @@ void MediaCaptureAdapter::ExtractFormats(MediaFrameSource const& source, bool wi
 		{
 			auto pixelformat = FormatConverter::GetFormat(subtype);
 
-			Model model(format);
+			Model model(source, format);
 			model.mode.format = pixelformat;
 			model.conversionRequired = withConversion;
 

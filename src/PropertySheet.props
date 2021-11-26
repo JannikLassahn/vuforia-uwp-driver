@@ -5,4 +5,18 @@
     <AdditionalIncludeDirectories>$(VUFORIA_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
   </ClCompile>
 </ItemDefinitionGroup>
+
+<PropertyGroup Condition="'$(Platform)' == 'Win32'">
+	<UnityOutputPath>Assets\Plugins\WSA\x86\</UnityOutputPath>
+</PropertyGroup>
+<PropertyGroup Condition="'$(Platform)' == 'x64'">
+	<UnityOutputPath>Assets\Plugins\WSA\x64\</UnityOutputPath>
+</PropertyGroup>
+
+<ItemDefinitionGroup>
+	<PostBuildEvent>
+		<Command>xcopy /Y /D "$(OutputPath)$(TargetFileName)" "$(ProjectDir)..\sample\UnityExternalCamera\$(UnityOutputPath)\$(TargetFileName)"</Command>
+		<Message>Copy DLL to Unity project</Message>
+	</PostBuildEvent>
+</ItemDefinitionGroup>
 </Project>

@@ -11,8 +11,7 @@ Camera::Camera(VuforiaDriver::PlatformData* platformData, DriverUserData* userDa
 bool Camera::open()
 {
 	std::string name = (m_UserData == nullptr || m_UserData->cameraName == nullptr) ? "" : m_UserData->cameraName;
-	auto result = m_Adapter.OpenMediaCapture(name).get();
-	return result == 0;
+	return m_Adapter.OpenMediaCapture(name).get();
 }
 
 bool Camera::close()

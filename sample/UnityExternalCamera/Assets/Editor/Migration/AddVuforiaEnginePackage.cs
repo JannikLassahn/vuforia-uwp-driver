@@ -12,11 +12,12 @@ public class AddVuforiaEnginePackage
 {
     static readonly string sPackagesPath = Path.Combine(Application.dataPath, "..", "Packages");
     static readonly string sManifestJsonPath = Path.Combine(sPackagesPath, "manifest.json");
-    const string VUFORIA_VERSION = "10.2.5";
+    const string VUFORIA_VERSION = "10.3.2";
     const string VUFORIA_TAR_FILE_DIR = "Assets/Editor/Migration/";
+    const string DEPENDENCIES_DIR = "Assets/Resources/VuforiaDependencies";
     const string PACKAGES_RELATIVE_PATH = "Packages";
 
-    static readonly ScopedRegistry sVuforiaRegistry = new ScopedRegistry()
+    static readonly ScopedRegistry sVuforiaRegistry = new ScopedRegistry
     {
         name = "Vuforia",
         url = "https://registry.packages.developer.vuforia.com/",
@@ -34,6 +35,26 @@ public class AddVuforiaEnginePackage
             
         if (!packages.All(p => IsVuforiaUpToDate(manifest, p.BundleId)))
             DisplayAddPackageDialogue(manifest, packages);
+        
+        ResolveDependencies(manifest);
+    }
+
+    public static void ResolveDependenciesSilent()
+    {
+        var manifest = Manifest.JsonDeserialize(sManifestJsonPath);
+        
+        var packages = GetDependencyDescriptions();
+        if (packages != null && packages.Count > 0)
+            MoveDependencies(manifest, packages);
+        
+        CleanupDependenciesFolder();
+    }
+    
+    static void ResolveDependencies(Manifest manifest)
+    {
+        var packages = GetDependencyDescriptions();
+        if (packages != null && packages.Count > 0)
+            DisplayDependenciesDialogue(manifest, packages);
     }
     
     static bool IsVuforiaUpToDate(Manifest manifest, string bundleId)
@@ -103,9 +124,21 @@ public class AddVuforiaEnginePackage
         {
             foreach (var package in packages)
             {
-                MovePackageFile(package.FileName);
+                MovePackageFile(VUFORIA_TAR_FILE_DIR, package.FileName);
                 UpdateManifest(manifest, package.BundleId, package.FileName);
             }
+        }
+    }
+    
+    static void DisplayDependenciesDialogue(Manifest manifest, IEnumerable<PackageDescription> packages)
+    {
+        if (EditorUtility.DisplayDialog("Add Sample Dependencies",
+                                        "Would you like to update your project to include all of its dependencies?\n" +
+                                        "If a different version of the package is already present, it will be deleted.\n\n",
+                                        "Update", "Cancel"))
+        {
+            MoveDependencies(manifest, packages);
+            CleanupDependenciesFolder();
         }
     }
     
@@ -145,9 +178,55 @@ public class AddVuforiaEnginePackage
         return packageDescriptions;
     }
     
-    static void MovePackageFile(string fileName)
+    static List<PackageDescription> GetDependencyDescriptions()
     {
-        var sourceFile = Path.Combine(Directory.GetCurrentDirectory(), VUFORIA_TAR_FILE_DIR, fileName);
+        var dependencyDirectory = Path.Combine(Directory.GetCurrentDirectory(), DEPENDENCIES_DIR);
+        if (!Directory.Exists(dependencyDirectory))
+            return null;
+        var tarFilePaths = Directory.GetFiles(dependencyDirectory).Where(f => f.EndsWith(".tgz"));
+
+        // Define a regular expression for repeated words.
+        var rx = new Regex(@"(([a-z]+)(\.[a-z]+)*)(\-((\d+)\.(\d+)\.(\d+)))*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        var packageDescriptions = new List<PackageDescription>();
+
+        foreach (var filePath in tarFilePaths)
+        {
+            var fileName = Path.GetFileName(filePath);
+            // Find matches.
+            var matches = rx.Matches(fileName);
+
+            // Report on each match.
+            foreach (Match match in matches)
+            {
+                var groups = match.Groups;
+                var bundleId = groups[1].Value;
+                bundleId = bundleId.Replace(".tgz", "");
+
+                packageDescriptions.Add(new PackageDescription
+                                        {
+                                            BundleId = bundleId,
+                                            FileName = fileName
+                                        });
+            }
+        }
+
+        return packageDescriptions;
+    }
+
+    static void MoveDependencies(Manifest manifest, IEnumerable<PackageDescription> packages)
+    {
+        foreach (var package in packages)
+        {
+            RemoveDependency(manifest, package.BundleId, package.FileName);
+            MovePackageFile(DEPENDENCIES_DIR, package.FileName);
+            UpdateManifest(manifest, package.BundleId, package.FileName);
+        }
+    }
+    
+    static void MovePackageFile(string folder, string fileName)
+    {
+        var sourceFile = Path.Combine(Directory.GetCurrentDirectory(), folder, fileName);
         var destFile = Path.Combine(Directory.GetCurrentDirectory(), PACKAGES_RELATIVE_PATH, fileName);
         File.Copy(sourceFile, destFile, true);
         File.Delete(sourceFile);
@@ -169,6 +248,40 @@ public class AddVuforiaEnginePackage
 
         manifest.JsonSerialize(sManifestJsonPath);
 
+        AssetDatabase.Refresh();
+    }
+
+    static void RemoveDependency(Manifest manifest, string bundleId, string fileName)
+    {
+        var destFile = Path.Combine(Directory.GetCurrentDirectory(), PACKAGES_RELATIVE_PATH, fileName);
+        if (File.Exists(destFile))
+            File.Delete(destFile);
+        
+        // remove existing
+        var dependencies = manifest.Dependencies.Split(',').ToList();
+        for (var i = 0; i < dependencies.Count; i++)
+        {
+            if (dependencies[i].Contains(bundleId))
+            {
+                dependencies.RemoveAt(i);
+                break;
+            }
+        }
+
+        manifest.Dependencies = string.Join(",", dependencies);
+
+        manifest.JsonSerialize(sManifestJsonPath);
+
+        AssetDatabase.Refresh();
+    }
+
+    static void CleanupDependenciesFolder()
+    {
+        if (!Directory.Exists(DEPENDENCIES_DIR)) 
+            return;
+        
+        Directory.Delete(DEPENDENCIES_DIR);
+        File.Delete(DEPENDENCIES_DIR + ".meta");
         AssetDatabase.Refresh();
     }
 

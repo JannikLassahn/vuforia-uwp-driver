@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vuforia:
     vuforiaLicenseKey: 
-    ufoLicenseKey: QWFWYlZuLy8vLy8vQUFBQUtPOUZDWjZxN0UrOXZSbmFtRTBRNUpWei9TRVlna05vRjVhZGlyRDY1QVFMSXJGRnJNbVlsdjVNT0E3ZEZZcmtUeDdYbGlrUHRMQmZNcklkR045Mk0wa1VmdERBdVk2TytWNWwxYUIzYVJZK1NNcit1OUZ0cUcrMUgzMnNxaDJvUUxtcWd1MVJiblVuUnN3MThGdHZuTGxQM2dPQXp5STU5b0o3b3BOZ1h1MVZtWEsyU0VWSnBETmp4UnlQazhqUjVwdFIxbm85NlljbFhSdUxvaE5uTzEzTjYzV3RLbERqbkdmMFdBaURDWlNiUmI1T0VIaHJZSFZuSkRVT08zbjlINVArUC9TczlVcno0eER1VDNMbDZON1dISzBXY0F0QjNKc2tLSjZDQXBZb1UxU0VQWFlwUndDRHE4MmxRUG5QQzdobldOY1RWcGtlQnlVd0U4QWt3c3BnYWE1TllHYk5iaXRtRi94bWR3UGg=
+    ufoLicenseKey:
     delayedInitialization: 1
     cameraDeviceModeSetting: -1
     maxSimultaneousImageTargets: 1
@@ -23,8 +23,8 @@ MonoBehaviour:
     useDelayedLoadingObjectTargets: 0
     modelTargetRecoWhileExtendedTracked: 1
     shareRecordingsInITunes: 0
-    version: 10.2.5
-    eulaAcceptedVersions: '{"Values":["10.2"]}'
+    version: 10.3.2
+    eulaAcceptedVersions: '{"Values":["10.2","8.1","8.3","10.3"]}'
   database:
     disableModelExtraction: 0
   shaders:
